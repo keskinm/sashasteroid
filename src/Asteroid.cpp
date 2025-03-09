@@ -1,8 +1,8 @@
 #include "../include/Asteroid.hpp"
 
 Asteroid::Asteroid(float x, float y) {
-    if (!texture.loadFromFile("asteroid.png")) {
-        throw std::runtime_error("Failed to load asteroid.png");
+    if (!texture.loadFromFile("assets/asteroid.png")) {
+        throw std::runtime_error("Failed to load assets/asteroid.png");
     }
     sprite.setTexture(texture);
     sprite.setScale(0.1f, 0.1f);

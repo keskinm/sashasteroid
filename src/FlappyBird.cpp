@@ -1,8 +1,8 @@
 #include "../include/FlappyBird.hpp"
 
 FlappyBird::FlappyBird() {
-    if (!texture.loadFromFile("flappy.png")) {
-        throw std::runtime_error("Failed to load flappy.png");
+    if (!texture.loadFromFile("assets/flappy.png")) {
+        throw std::runtime_error("Failed to load assets/flappy.png");
     }
     sprite.setTexture(texture);
     sprite.setScale(0.1f, 0.1f);

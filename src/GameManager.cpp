@@ -6,8 +6,8 @@ GameManager::GameManager() : window(sf::VideoMode(WINDOW_WIDTH, WINDOW_HEIGHT), 
     window.setFramerateLimit(60);
     srand(time(0));
 
-    if (!backgroundTexture.loadFromFile("background.png")) {
-        throw std::runtime_error("Failed to load background.png");
+    if (!backgroundTexture.loadFromFile("assets/background.png")) {
+        throw std::runtime_error("Failed to load assets/background.png");
     }
     background.setTexture(backgroundTexture);
     background.setScale(
@@ -15,8 +15,8 @@ GameManager::GameManager() : window(sf::VideoMode(WINDOW_WIDTH, WINDOW_HEIGHT), 
         (float)WINDOW_HEIGHT / backgroundTexture.getSize().y
     );
 
-    if (!font.loadFromFile("arial.ttf")) {
-        throw std::runtime_error("Failed to load arial.ttf");
+    if (!font.loadFromFile("assets/arial.ttf")) {
+        throw std::runtime_error("Failed to load assets/arial.ttf");
     }
 
     scoreText.setFont(font);
