@@ -2,6 +2,7 @@
 #include <vector>
 #include <cstdlib>
 #include <ctime>
+#include <sstream>
 
 const int WINDOW_WIDTH = 800;
 const int WINDOW_HEIGHT = 600;
@@ -72,6 +73,18 @@ int main() {
     sf::Clock asteroidSpawnClock;
 
     bool gameOver = false;
+    int score = 0;
+
+    sf::Font font;
+    if (!font.loadFromFile("arial.ttf")) {
+        return -1;
+    }
+
+    sf::Text scoreText;
+    scoreText.setFont(font);
+    scoreText.setCharacterSize(30);
+    scoreText.setFillColor(sf::Color::White);
+    scoreText.setPosition(10, 10);
 
     while (window.isOpen()) {
         sf::Event event;
@@ -98,25 +111,31 @@ int main() {
                     gameOver = true;
                 }
             }
+
+            asteroids.erase(std::remove_if(asteroids.begin(), asteroids.end(), [&](Asteroid &a) {
+                if (a.shape.getPosition().x < -40) {
+                    score++;
+                    return true;
+                }
+                return false;
+        }), asteroids.end());
         }
 
-        asteroids.erase(std::remove_if(asteroids.begin(), asteroids.end(), [](Asteroid &a) {
-            return a.shape.getPosition().x < -40;
-        }), asteroids.end());
+        std::stringstream ss;
+        ss << "Score: " << score;
+        scoreText.setString(ss.str());
 
         window.clear();
         window.draw(flappy.shape);
         for (auto &asteroid : asteroids)
             window.draw(asteroid.shape);
+        window.draw(scoreText);
 
         if (gameOver) {
-            sf::Font font;
-            if (font.loadFromFile("arial.ttf")) {
                 sf::Text gameOverText("Game Over", font, 50);
                 gameOverText.setFillColor(sf::Color::White);
                 gameOverText.setPosition(WINDOW_WIDTH / 2 - 100, WINDOW_HEIGHT / 2 - 25);
                 window.draw(gameOverText);
-            }
         }
 
         window.display();
