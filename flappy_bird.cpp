@@ -4,6 +4,7 @@
 #include <ctime>
 #include <sstream>
 
+// Constantes du jeu
 const int WINDOW_WIDTH = 800;
 const int WINDOW_HEIGHT = 600;
 const float GRAVITY = 0.5f;
@@ -12,23 +13,28 @@ const float ASTEROID_SPEED = 5.f;
 
 class FlappyBird {
 public:
-    sf::RectangleShape shape;
+    sf::Sprite sprite;
+    sf::Texture texture;
     sf::Vector2f velocity;
 
     FlappyBird() {
-        shape.setSize({40, 40});
-        shape.setFillColor(sf::Color::Yellow);
-        shape.setPosition(100, WINDOW_HEIGHT / 2);
+        if (!texture.loadFromFile("flappy.png")) {
+            throw std::runtime_error("Failed to load flappy.png");
+        }
+        sprite.setTexture(texture);
+        sprite.setScale(0.1f, 0.1f);
+        sprite.setPosition(100, WINDOW_HEIGHT / 2);
     }
 
     void update() {
         velocity.y += GRAVITY;
-        shape.move(0, velocity.y);
+        sprite.move(0, velocity.y);
 
-        if (shape.getPosition().y < 0)
-            shape.setPosition(100, 0);
-        if (shape.getPosition().y > WINDOW_HEIGHT - shape.getSize().y)
-            shape.setPosition(100, WINDOW_HEIGHT - shape.getSize().y);
+        // Empêche Flappy de sortir de l'écran
+        if (sprite.getPosition().y < 0)
+            sprite.setPosition(100, 0);
+        if (sprite.getPosition().y > WINDOW_HEIGHT - sprite.getGlobalBounds().height)
+            sprite.setPosition(100, WINDOW_HEIGHT - sprite.getGlobalBounds().height);
     }
 
     void jump() {
@@ -36,26 +42,30 @@ public:
     }
 
     sf::FloatRect getBounds() {
-        return shape.getGlobalBounds();
+        return sprite.getGlobalBounds();
     }
 };
 
 class Asteroid {
 public:
-    sf::RectangleShape shape;
+    sf::Sprite sprite;
+    sf::Texture texture;
 
     Asteroid(float x, float y) {
-        shape.setSize({40, 40});
-        shape.setFillColor(sf::Color::Red);
-        shape.setPosition(x, y);
+        if (!texture.loadFromFile("asteroid.png")) {
+            throw std::runtime_error("Failed to load asteroid.png");
+        }
+        sprite.setTexture(texture);
+        sprite.setScale(0.1f, 0.1f);
+        sprite.setPosition(x, y);
     }
 
     void update() {
-        shape.move(-ASTEROID_SPEED, 0);
+        sprite.move(-ASTEROID_SPEED, 0);
     }
 
     sf::FloatRect getBounds() {
-        return shape.getGlobalBounds();
+        return sprite.getGlobalBounds();
     }
 };
 
@@ -68,13 +78,21 @@ int main() {
     sf::RenderWindow window(sf::VideoMode(WINDOW_WIDTH, WINDOW_HEIGHT), "Flappy Bird - C++ SFML");
     window.setFramerateLimit(60);
 
+    // Chargement du fond d'écran
+    sf::Texture backgroundTexture;
+    if (!backgroundTexture.loadFromFile("background.png")) {
+        throw std::runtime_error("Failed to load background.png");
+    }
+    sf::Sprite background(backgroundTexture);
+    background.setScale((float)WINDOW_WIDTH / backgroundTexture.getSize().x, (float)WINDOW_HEIGHT / backgroundTexture.getSize().y);
+
     FlappyBird flappy;
     std::vector<Asteroid> asteroids;
     sf::Clock asteroidSpawnClock;
-
     bool gameOver = false;
     int score = 0;
 
+    // Chargement de la police pour afficher le score
     sf::Font font;
     if (!font.loadFromFile("arial.ttf")) {
         return -1;
@@ -96,6 +114,7 @@ int main() {
         }
 
         if (!gameOver) {
+            // Ajouter des astéroïdes toutes les 2 secondes
             if (asteroidSpawnClock.getElapsedTime().asSeconds() > 2) {
                 float y = rand() % (WINDOW_HEIGHT - 40);
                 asteroids.emplace_back(WINDOW_WIDTH, y);
@@ -106,36 +125,41 @@ int main() {
             for (auto &asteroid : asteroids)
                 asteroid.update();
 
+            // Vérifier les collisions
             for (auto &asteroid : asteroids) {
                 if (checkCollision(flappy, asteroid)) {
                     gameOver = true;
                 }
             }
 
+            // Supprimer les astéroïdes hors écran et augmenter le score
             asteroids.erase(std::remove_if(asteroids.begin(), asteroids.end(), [&](Asteroid &a) {
-                if (a.shape.getPosition().x < -40) {
+                if (a.sprite.getPosition().x < -40) {
                     score++;
                     return true;
                 }
                 return false;
-        }), asteroids.end());
+            }), asteroids.end());
         }
 
+        // Mettre à jour le texte du score
         std::stringstream ss;
         ss << "Score: " << score;
         scoreText.setString(ss.str());
 
         window.clear();
-        window.draw(flappy.shape);
+        window.draw(background);
+        window.draw(flappy.sprite);
         for (auto &asteroid : asteroids)
-            window.draw(asteroid.shape);
+            window.draw(asteroid.sprite);
         window.draw(scoreText);
 
+        // Affichage du message "Game Over"
         if (gameOver) {
-                sf::Text gameOverText("Game Over", font, 50);
-                gameOverText.setFillColor(sf::Color::White);
-                gameOverText.setPosition(WINDOW_WIDTH / 2 - 100, WINDOW_HEIGHT / 2 - 25);
-                window.draw(gameOverText);
+            sf::Text gameOverText("Game Over", font, 50);
+            gameOverText.setFillColor(sf::Color::White);
+            gameOverText.setPosition(WINDOW_WIDTH / 2 - 100, WINDOW_HEIGHT / 2 - 25);
+            window.draw(gameOverText);
         }
 
         window.display();
