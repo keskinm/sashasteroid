@@ -3,13 +3,16 @@
 #include <cstdlib>
 #include <ctime>
 #include <sstream>
+#include <cmath>
 
-// Constantes du jeu
 const int WINDOW_WIDTH = 800;
 const int WINDOW_HEIGHT = 600;
 const float GRAVITY = 0.5f;
 const float JUMP_STRENGTH = -10.f;
 const float ASTEROID_SPEED = 5.f;
+const int NUM_LASERS = 5;
+const float LASER_LENGTH = 300.f;
+const float LASER_ANGLE_STEP = M_PI / (NUM_LASERS - 1);
 
 class FlappyBird {
 public:
@@ -29,8 +32,6 @@ public:
     void update() {
         velocity.y += GRAVITY;
         sprite.move(0, velocity.y);
-
-        // Empêche Flappy de sortir de l'écran
         if (sprite.getPosition().y < 0)
             sprite.setPosition(100, 0);
         if (sprite.getPosition().y > WINDOW_HEIGHT - sprite.getGlobalBounds().height)
@@ -69,6 +70,36 @@ public:
     }
 };
 
+class Laser {
+public:
+    sf::VertexArray beam;
+    sf::Vector2f origin;
+    sf::Vector2f direction;
+
+    Laser(sf::Vector2f start, float angle) {
+        origin = start;
+        direction = sf::Vector2f(std::cos(angle), std::sin(angle));
+        beam = sf::VertexArray(sf::Lines, 2);
+        beam[0].position = origin;
+        beam[0].color = sf::Color::Cyan;
+        beam[1].position = origin + direction * LASER_LENGTH;
+        beam[1].color = sf::Color::Cyan;
+    }
+
+    void update(std::vector<Asteroid> &asteroids) {
+        float closestDistance = LASER_LENGTH;
+        for (auto &asteroid : asteroids) {
+            if (asteroid.getBounds().intersects(sf::FloatRect(beam[0].position, sf::Vector2f(1, 1)))) {
+                float distance = std::hypot(asteroid.sprite.getPosition().x - origin.x, asteroid.sprite.getPosition().y - origin.y);
+                if (distance < closestDistance) {
+                    closestDistance = distance;
+                }
+            }
+        }
+        beam[1].position = origin + direction * closestDistance;
+    }
+};
+
 bool checkCollision(FlappyBird &flappy, Asteroid &asteroid) {
     return flappy.getBounds().intersects(asteroid.getBounds());
 }
@@ -78,7 +109,6 @@ int main() {
     sf::RenderWindow window(sf::VideoMode(WINDOW_WIDTH, WINDOW_HEIGHT), "Flappy Bird - C++ SFML");
     window.setFramerateLimit(60);
 
-    // Chargement du fond d'écran
     sf::Texture backgroundTexture;
     if (!backgroundTexture.loadFromFile("background.png")) {
         throw std::runtime_error("Failed to load background.png");
@@ -88,11 +118,11 @@ int main() {
 
     FlappyBird flappy;
     std::vector<Asteroid> asteroids;
+    std::vector<Laser> lasers;
     sf::Clock asteroidSpawnClock;
     bool gameOver = false;
     int score = 0;
 
-    // Chargement de la police pour afficher le score
     sf::Font font;
     if (!font.loadFromFile("arial.ttf")) {
         return -1;
@@ -114,7 +144,6 @@ int main() {
         }
 
         if (!gameOver) {
-            // Ajouter des astéroïdes toutes les 2 secondes
             if (asteroidSpawnClock.getElapsedTime().asSeconds() > 2) {
                 float y = rand() % (WINDOW_HEIGHT - 40);
                 asteroids.emplace_back(WINDOW_WIDTH, y);
@@ -125,36 +154,30 @@ int main() {
             for (auto &asteroid : asteroids)
                 asteroid.update();
 
-            // Vérifier les collisions
+            lasers.clear();
+            for (int i = 0; i < NUM_LASERS; i++) {
+                float angle = -M_PI / 6 + i * LASER_ANGLE_STEP;
+                lasers.emplace_back(flappy.sprite.getPosition() + sf::Vector2f(20, 20), angle);
+            }
+            for (auto &laser : lasers)
+                laser.update(asteroids);
+
             for (auto &asteroid : asteroids) {
                 if (checkCollision(flappy, asteroid)) {
                     gameOver = true;
                 }
             }
-
-            // Supprimer les astéroïdes hors écran et augmenter le score
-            asteroids.erase(std::remove_if(asteroids.begin(), asteroids.end(), [&](Asteroid &a) {
-                if (a.sprite.getPosition().x < -40) {
-                    score++;
-                    return true;
-                }
-                return false;
-            }), asteroids.end());
         }
-
-        // Mettre à jour le texte du score
-        std::stringstream ss;
-        ss << "Score: " << score;
-        scoreText.setString(ss.str());
 
         window.clear();
         window.draw(background);
         window.draw(flappy.sprite);
         for (auto &asteroid : asteroids)
             window.draw(asteroid.sprite);
+        for (auto &laser : lasers)
+            window.draw(laser.beam);
         window.draw(scoreText);
 
-        // Affichage du message "Game Over"
         if (gameOver) {
             sf::Text gameOverText("Game Over", font, 50);
             gameOverText.setFillColor(sf::Color::White);
