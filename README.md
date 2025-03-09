@@ -13,4 +13,4 @@ cmake --build build
 ./build/flappy
 ```
 
-For lazymens simply `./build.sh` (you may need `sudo chmod +x build.sh` before)
+For lazymens simply `./build.sh && ./build/flappy` (you may need `sudo chmod +x build.sh` before)
