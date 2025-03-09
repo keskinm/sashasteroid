@@ -3,7 +3,6 @@
 #include <cstdlib>
 #include <ctime>
 
-// Constantes du jeu
 const int WINDOW_WIDTH = 800;
 const int WINDOW_HEIGHT = 600;
 const float GRAVITY = 0.5f;
@@ -25,7 +24,6 @@ public:
         velocity.y += GRAVITY;
         shape.move(0, velocity.y);
 
-        // Empêche Flappy de sortir de l'écran
         if (shape.getPosition().y < 0)
             shape.setPosition(100, 0);
         if (shape.getPosition().y > WINDOW_HEIGHT - shape.getSize().y)
@@ -34,6 +32,10 @@ public:
 
     void jump() {
         velocity.y = JUMP_STRENGTH;
+    }
+
+    sf::FloatRect getBounds() {
+        return shape.getGlobalBounds();
     }
 };
 
@@ -50,7 +52,15 @@ public:
     void update() {
         shape.move(-ASTEROID_SPEED, 0);
     }
+
+    sf::FloatRect getBounds() {
+        return shape.getGlobalBounds();
+    }
 };
+
+bool checkCollision(FlappyBird &flappy, Asteroid &asteroid) {
+    return flappy.getBounds().intersects(asteroid.getBounds());
+}
 
 int main() {
     srand(time(0));
@@ -61,27 +71,35 @@ int main() {
     std::vector<Asteroid> asteroids;
     sf::Clock asteroidSpawnClock;
 
+    bool gameOver = false;
+
     while (window.isOpen()) {
         sf::Event event;
         while (window.pollEvent(event)) {
             if (event.type == sf::Event::Closed)
                 window.close();
-            if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::Space)
+            if (!gameOver && event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::Space)
                 flappy.jump();
         }
 
-        // Ajouter des astéroïdes toutes les 2 secondes
-        if (asteroidSpawnClock.getElapsedTime().asSeconds() > 2) {
-            float y = rand() % (WINDOW_HEIGHT - 40);
-            asteroids.emplace_back(WINDOW_WIDTH, y);
-            asteroidSpawnClock.restart();
+        if (!gameOver) {
+            if (asteroidSpawnClock.getElapsedTime().asSeconds() > 2) {
+                float y = rand() % (WINDOW_HEIGHT - 40);
+                asteroids.emplace_back(WINDOW_WIDTH, y);
+                asteroidSpawnClock.restart();
+            }
+
+            flappy.update();
+            for (auto &asteroid : asteroids)
+                asteroid.update();
+
+            for (auto &asteroid : asteroids) {
+                if (checkCollision(flappy, asteroid)) {
+                    gameOver = true;
+                }
+            }
         }
 
-        flappy.update();
-        for (auto &asteroid : asteroids)
-            asteroid.update();
-
-        // Nettoyer les astéroïdes hors écran
         asteroids.erase(std::remove_if(asteroids.begin(), asteroids.end(), [](Asteroid &a) {
             return a.shape.getPosition().x < -40;
         }), asteroids.end());
@@ -90,6 +108,17 @@ int main() {
         window.draw(flappy.shape);
         for (auto &asteroid : asteroids)
             window.draw(asteroid.shape);
+
+        if (gameOver) {
+            sf::Font font;
+            if (font.loadFromFile("arial.ttf")) {
+                sf::Text gameOverText("Game Over", font, 50);
+                gameOverText.setFillColor(sf::Color::White);
+                gameOverText.setPosition(WINDOW_WIDTH / 2 - 100, WINDOW_HEIGHT / 2 - 25);
+                window.draw(gameOverText);
+            }
+        }
+
         window.display();
     }
 
