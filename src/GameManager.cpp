@@ -104,7 +104,7 @@ void GameManager::spawnAsteroid() {
 void GameManager::updateLasers() {
     lasers.clear();
     for (int i = 0; i < NUM_LASERS; i++) {
-        float angle = -M_PI / 6 + i * LASER_ANGLE_STEP;
+        float angle = -M_PI / 2 + i * LASER_ANGLE_STEP;
         lasers.emplace_back(flappy.getPosition() + sf::Vector2f(20, 20), angle);
     }
     for (auto& laser : lasers) {
