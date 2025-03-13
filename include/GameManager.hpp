@@ -35,6 +35,6 @@ private:
 
     static constexpr int WINDOW_WIDTH = 800;
     static constexpr int WINDOW_HEIGHT = 600;
-    static constexpr int NUM_LASERS = 5;
-    static constexpr float LASER_ANGLE_STEP = M_PI / (NUM_LASERS - 1);
+    static constexpr int NUM_LASERS = 8;
+    static constexpr float LASER_ANGLE_STEP = M_PI / (NUM_LASERS + 1);
 };
